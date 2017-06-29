@@ -21,42 +21,53 @@ template<typename T> FORCE_INLINE T max(const T &a, const T &b) { return a > b ?
 template<typename T> FORCE_INLINE T min(const T &a, const T &b) { return a < b ? a : b; }
 
 template<typename T, typename Y> FORCE_INLINE T simd_cast(Y A);
-template<> FORCE_INLINE __m128  simd_cast<__m128>(float A) { return _mm_set1_ps(A); }
-template<> FORCE_INLINE __m128  simd_cast<__m128>(__m128i A) { return _mm_castsi128_ps(A); }
-template<> FORCE_INLINE __m128  simd_cast<__m128>(__m128 A) { return A; }
-template<> FORCE_INLINE __m128i simd_cast<__m128i>(int A) { return _mm_set1_epi32(A); }
-template<> FORCE_INLINE __m128i simd_cast<__m128i>(__m128 A) { return _mm_castps_si128(A); }
-template<> FORCE_INLINE __m128i simd_cast<__m128i>(__m128i A) { return A; }
+template<> FORCE_INLINE moc__m128  simd_cast<moc__m128>(float A) { return (moc__m128)_mm_set1_ps(A); }
+template<> FORCE_INLINE moc__m128  simd_cast<moc__m128>(moc__m128i A) { return (moc__m128)_mm_castsi128_ps(A); }
+template<> FORCE_INLINE moc__m128  simd_cast<moc__m128>(moc__m128 A) { return (moc__m128)A; }
+template<> FORCE_INLINE moc__m128i simd_cast<moc__m128i>(int A) { return (moc__m128i)_mm_set1_epi32(A); }
+template<> FORCE_INLINE moc__m128i simd_cast<moc__m128i>(moc__m128 A) { return (moc__m128i)_mm_castps_si128(A); }
+template<> FORCE_INLINE moc__m128i simd_cast<moc__m128i>(moc__m128i A) { return (moc__m128i)A; }
+#ifndef __clang__
 template<> FORCE_INLINE __m256  simd_cast<__m256>(float A) { return _mm256_set1_ps(A); }
 template<> FORCE_INLINE __m256  simd_cast<__m256>(__m256i A) { return _mm256_castsi256_ps(A); }
 template<> FORCE_INLINE __m256  simd_cast<__m256>(__m256 A) { return A; }
 template<> FORCE_INLINE __m256i simd_cast<__m256i>(int A) { return _mm256_set1_epi32(A); }
 template<> FORCE_INLINE __m256i simd_cast<__m256i>(__m256 A) { return _mm256_castps_si256(A); }
 template<> FORCE_INLINE __m256i simd_cast<__m256i>(__m256i A) { return A; }
+#endif
 
 // Unary operators
-static FORCE_INLINE __m128  operator-(const __m128  &A) { return _mm_xor_ps(A, _mm_set1_ps(-0.0f)); }
-static FORCE_INLINE __m128i operator-(const __m128i &A) { return _mm_sub_epi32(_mm_set1_epi32(0), A); }
+static FORCE_INLINE moc__m128  operator-(const moc__m128  &A) { return (moc__m128)_mm_xor_ps(A, _mm_set1_ps(-0.0f)); }
+static FORCE_INLINE moc__m128i operator-(const moc__m128i &A) { return (moc__m128i)_mm_sub_epi32(_mm_set1_epi32(0), A); }
+#ifndef __clang__
 static FORCE_INLINE __m256  operator-(const __m256  &A) { return _mm256_xor_ps(A, _mm256_set1_ps(-0.0f)); }
 static FORCE_INLINE __m256i operator-(const __m256i &A) { return _mm256_sub_epi32(_mm256_set1_epi32(0), A); }
-static FORCE_INLINE __m128  operator~(const __m128  &A) { return _mm_xor_ps(A, _mm_castsi128_ps(_mm_set1_epi32(~0))); }
-static FORCE_INLINE __m128i operator~(const __m128i &A) { return _mm_xor_si128(A, _mm_set1_epi32(~0)); }
+#endif
+static FORCE_INLINE moc__m128  operator~(const moc__m128  &A) { return (moc__m128)_mm_xor_ps(A, _mm_castsi128_ps(_mm_set1_epi32(~0))); }
+static FORCE_INLINE moc__m128i operator~(const moc__m128i &A) { return (moc__m128i)_mm_xor_si128(A, _mm_set1_epi32(~0)); }
+#ifndef __clang__
 static FORCE_INLINE __m256  operator~(const __m256  &A) { return _mm256_xor_ps(A, _mm256_castsi256_ps(_mm256_set1_epi32(~0))); }
 static FORCE_INLINE __m256i operator~(const __m256i &A) { return _mm256_xor_si256(A, _mm256_set1_epi32(~0)); }
 static FORCE_INLINE __m256 abs(const __m256 &a) { return _mm256_and_ps(a, _mm256_castsi256_ps(_mm256_set1_epi32(0x7FFFFFFF))); }
-static FORCE_INLINE __m128 abs(const __m128 &a) { return _mm_and_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF))); }
+#endif
+static FORCE_INLINE moc__m128 abs(const moc__m128 &a) { return (moc__m128)_mm_and_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF))); }
 
 // Binary operators
 #define SIMD_BINARY_OP(SIMD_TYPE, BASE_TYPE, prefix, postfix, func, op) \
-	static FORCE_INLINE SIMD_TYPE operator##op(const SIMD_TYPE &A, const SIMD_TYPE &B)		{ return _##prefix##_##func##_##postfix(A, B); } \
-	static FORCE_INLINE SIMD_TYPE operator##op(const SIMD_TYPE &A, const BASE_TYPE B)		{ return _##prefix##_##func##_##postfix(A, simd_cast<SIMD_TYPE>(B)); } \
-	static FORCE_INLINE SIMD_TYPE operator##op(const BASE_TYPE &A, const SIMD_TYPE &B)		{ return _##prefix##_##func##_##postfix(simd_cast<SIMD_TYPE>(A), B); } \
-	static FORCE_INLINE SIMD_TYPE &operator##op##=(SIMD_TYPE &A, const SIMD_TYPE &B)		{ return (A = _##prefix##_##func##_##postfix(A, B)); } \
-	static FORCE_INLINE SIMD_TYPE &operator##op##=(SIMD_TYPE &A, const BASE_TYPE B)			{ return (A = _##prefix##_##func##_##postfix(A, simd_cast<SIMD_TYPE>(B))); }
+	static FORCE_INLINE SIMD_TYPE operator op(const SIMD_TYPE &A, const SIMD_TYPE &B)		{ return (SIMD_TYPE)_##prefix##_##func##_##postfix(A, B); } \
+	static FORCE_INLINE SIMD_TYPE operator op(const SIMD_TYPE &A, const BASE_TYPE B)		{ return (SIMD_TYPE)_##prefix##_##func##_##postfix(A, simd_cast<SIMD_TYPE>(B)); } \
+	static FORCE_INLINE SIMD_TYPE operator op(const BASE_TYPE &A, const SIMD_TYPE &B)		{ return (SIMD_TYPE)_##prefix##_##func##_##postfix(simd_cast<SIMD_TYPE>(A), B); } \
+	static FORCE_INLINE SIMD_TYPE &operator op##=(SIMD_TYPE &A, const SIMD_TYPE &B)			{ return (A = (SIMD_TYPE)_##prefix##_##func##_##postfix(A, B)); } \
+	static FORCE_INLINE SIMD_TYPE &operator op##=(SIMD_TYPE &A, const BASE_TYPE B)			{ return (A = (SIMD_TYPE)_##prefix##_##func##_##postfix(A, simd_cast<SIMD_TYPE>(B))); }
 
+#ifndef __clang__
 #define ALL_SIMD_BINARY_OP(type_suffix, base_type, postfix, func, op) \
-	SIMD_BINARY_OP(__m128##type_suffix, base_type, mm, postfix, func, op) \
+	SIMD_BINARY_OP(moc__m128##type_suffix, base_type, mm, postfix, func, op) \
 	SIMD_BINARY_OP(__m256##type_suffix, base_type, mm256, postfix, func, op)
+#else
+#define ALL_SIMD_BINARY_OP(type_suffix, base_type, postfix, func, op) \
+	SIMD_BINARY_OP(moc__m128##type_suffix, base_type, mm, postfix, func, op)
+#endif
 
 ALL_SIMD_BINARY_OP(, float, ps, add, +)
 ALL_SIMD_BINARY_OP(, float, ps, sub, -)
@@ -67,12 +78,60 @@ ALL_SIMD_BINARY_OP(i, int, epi32, sub, -)
 ALL_SIMD_BINARY_OP(, float, ps, and, &)
 ALL_SIMD_BINARY_OP(, float, ps, or , | )
 ALL_SIMD_BINARY_OP(, float, ps, xor, ^)
-SIMD_BINARY_OP(__m128i, int, mm, si128, and, &)
-SIMD_BINARY_OP(__m128i, int, mm, si128, or , | )
-SIMD_BINARY_OP(__m128i, int, mm, si128, xor, ^)
+SIMD_BINARY_OP(moc__m128i, int, mm, si128, and, &)
+SIMD_BINARY_OP(moc__m128i, int, mm, si128, or , | )
+SIMD_BINARY_OP(moc__m128i, int, mm, si128, xor, ^)
+#ifndef __clang__
 SIMD_BINARY_OP(__m256i, int, mm256, si256, and, &)
 SIMD_BINARY_OP(__m256i, int, mm256, si256, or , | )
 SIMD_BINARY_OP(__m256i, int, mm256, si256, xor, ^)
+#endif
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Common SSE/AVX input assembly functions, note that there are specialized gathers for the general case in the SSE/AVX specific files
+// (placed outside of the class scope to avoid "warning : explicit specialization of 'VtxFetch4' within class scope is a Microsoft extension"
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template<int N> FORCE_INLINE void VtxFetch4( __mw *v, const unsigned int *inTrisPtr, int triVtx, const float *inVtx, int numLanes )
+{
+    // Fetch 4 vectors (matching 1 sse part of the SIMD register), and continue to the next
+    const int ssePart = ( SIMD_LANES / 4 ) - N;
+    for( int k = 0; k < 4; k++ )
+    {
+        int lane = 4 * ssePart + k;
+        if( numLanes > lane )
+            v[k] = (__mw)_mmw_insertf32x4_ps( v[k], _mm_loadu_ps( &inVtx[inTrisPtr[lane * 3 + triVtx] << 2] ), ssePart );
+    }
+    VtxFetch4<N - 1>( v, inTrisPtr, triVtx, inVtx, numLanes );
+}
+template<> FORCE_INLINE void VtxFetch4<0>( __mw *v, const unsigned int *inTrisPtr, int triVtx, const float *inVtx, int numLanes ) {}
+
+FORCE_INLINE void GatherVerticesFast( __mw *vtxX, __mw *vtxY, __mw *vtxW, const float *inVtx, const unsigned int *inTrisPtr, int numLanes )
+{
+    // This function assumes that the vertex layout is four packed x, y, z, w-values.
+    // Since the layout is known we can get some additional performance by using a 
+    // more optimized gather strategy.
+    assert( numLanes >= 1 );
+
+    // Gather vertices 
+    __mw v[4], swz[4];
+    for( int i = 0; i < 3; i++ )
+    {
+        // Load 4 (x,y,z,w) vectors per SSE part of the SIMD register (so 4 vectors for SSE, 8 vectors for AVX)
+        // this fetch uses templates to unroll the loop
+        VtxFetch4<SIMD_LANES / 4>( v, inTrisPtr, i, inVtx, numLanes );
+
+        // Transpose each individual SSE part of the SSE/AVX register (similar to _MM_TRANSPOSE4_PS)
+        swz[0] = (__mw)_mmw_shuffle_ps( v[0], v[1], 0x44 );
+        swz[2] = (__mw)_mmw_shuffle_ps( v[0], v[1], 0xEE );
+        swz[1] = (__mw)_mmw_shuffle_ps( v[2], v[3], 0x44 );
+        swz[3] = (__mw)_mmw_shuffle_ps( v[2], v[3], 0xEE );
+
+        vtxX[i] = (__mw)_mmw_shuffle_ps( swz[0], swz[1], 0x88 );
+        vtxY[i] = (__mw)_mmw_shuffle_ps( swz[0], swz[1], 0xDD );
+        vtxW[i] = (__mw)_mmw_shuffle_ps( swz[2], swz[3], 0xDD );
+    }
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Common defines and constants
@@ -130,9 +189,9 @@ SIMD_BINARY_OP(__m256i, int, mm256, si256, xor, ^)
 // SIMD common defines (constant values)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define SIMD_BITS_ONE       _mmw_set1_epi32(~0)
-#define SIMD_BITS_ZERO      _mmw_setzero_epi32()
-#define SIMD_TILE_WIDTH     _mmw_set1_epi32(TILE_WIDTH)
+#define SIMD_BITS_ONE       (__mwi)_mmw_set1_epi32(~0)
+#define SIMD_BITS_ZERO      (__mwi)_mmw_setzero_epi32()
+#define SIMD_TILE_WIDTH     (__mwi)_mmw_set1_epi32(TILE_WIDTH)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Private class containing the implementation
@@ -155,10 +214,10 @@ public:
 	__mw			mHalfHeight;
 	__mw			mCenterX;
 	__mw			mCenterY;
-	__m128			mCSFrustumPlanes[5];
-	__m128			mIHalfSize;
-	__m128			mICenter;
-	__m128i			mIScreenSize;
+	moc__m128		mCSFrustumPlanes[5];
+	moc__m128		mIHalfSize;
+	moc__m128		mICenter;
+	moc__m128i		mIScreenSize;
 
 	float			mNearDist;
 	int				mWidth;
@@ -180,11 +239,11 @@ public:
 		mAlignedFreeCallback = memFree;
 
 		SetNearClipPlane( 0.0f );
-		mCSFrustumPlanes[0] = _mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f);
-		mCSFrustumPlanes[1] = _mm_setr_ps(1.0f, 0.0f, 1.0f, 0.0f);
-		mCSFrustumPlanes[2] = _mm_setr_ps(-1.0f, 0.0f, 1.0f, 0.0f);
-		mCSFrustumPlanes[3] = _mm_setr_ps(0.0f, 1.0f, 1.0f, 0.0f);
-		mCSFrustumPlanes[4] = _mm_setr_ps(0.0f, -1.0f, 1.0f, 0.0f);
+		mCSFrustumPlanes[0] = (moc__m128)_mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f);
+		mCSFrustumPlanes[1] = (moc__m128)_mm_setr_ps(1.0f, 0.0f, 1.0f, 0.0f);
+		mCSFrustumPlanes[2] = (moc__m128)_mm_setr_ps(-1.0f, 0.0f, 1.0f, 0.0f);
+		mCSFrustumPlanes[3] = (moc__m128)_mm_setr_ps(0.0f, 1.0f, 1.0f, 0.0f);
+		mCSFrustumPlanes[4] = (moc__m128)_mm_setr_ps(0.0f, -1.0f, 1.0f, 0.0f);
 
 		memset(&mStats, 0, sizeof(OcclusionCullingStatistics));
 
@@ -217,18 +276,18 @@ public:
 		mHeight = (int)height;
 		mTilesWidth = (int)(width + TILE_WIDTH - 1) >> TILE_WIDTH_SHIFT;
 		mTilesHeight = (int)(height + TILE_HEIGHT - 1) >> TILE_HEIGHT_SHIFT;
-		mCenterX = _mmw_set1_ps((float)mWidth  * 0.5f);
-		mCenterY = _mmw_set1_ps((float)mHeight * 0.5f);
-		mICenter = _mm_setr_ps((float)mWidth * 0.5f, (float)mWidth * 0.5f, (float)mHeight * 0.5f, (float)mHeight * 0.5f);
-		mHalfWidth = _mmw_set1_ps((float)mWidth  * 0.5f);
+		mCenterX = (__mw)_mmw_set1_ps((float)mWidth  * 0.5f);
+		mCenterY = (__mw)_mmw_set1_ps((float)mHeight * 0.5f);
+		mICenter = (moc__m128)_mm_setr_ps((float)mWidth * 0.5f, (float)mWidth * 0.5f, (float)mHeight * 0.5f, (float)mHeight * 0.5f);
+		mHalfWidth = (__mw)_mmw_set1_ps((float)mWidth  * 0.5f);
 #if USE_D3D != 0
-		mHalfHeight = _mmw_set1_ps((float)-mHeight * 0.5f);
-		mIHalfSize = _mm_setr_ps((float)mWidth * 0.5f, (float)mWidth * 0.5f, (float)-mHeight * 0.5f, (float)-mHeight * 0.5f);
+		mHalfHeight = (__mw)_mmw_set1_ps((float)-mHeight * 0.5f);
+		mIHalfSize = (moc__m128)_mm_setr_ps((float)mWidth * 0.5f, (float)mWidth * 0.5f, (float)-mHeight * 0.5f, (float)-mHeight * 0.5f);
 #else
-		mHalfHeight = _mmw_set1_ps((float)mHeight * 0.5f);
-		mIHalfSize = _mm_setr_ps((float)mWidth * 0.5f, (float)mWidth * 0.5f, (float)mHeight * 0.5f, (float)mHeight * 0.5f);
+		mHalfHeight = (__mw)_mmw_set1_ps((float)mHeight * 0.5f);
+		mIHalfSize = (moc__m128)_mm_setr_ps((float)mWidth * 0.5f, (float)mWidth * 0.5f, (float)mHeight * 0.5f, (float)mHeight * 0.5f);
 #endif
-		mIScreenSize = _mm_setr_epi32(mWidth - 1, mWidth - 1, mHeight - 1, mHeight - 1);
+		mIScreenSize = (moc__m128i)_mm_setr_epi32(mWidth - 1, mWidth - 1, mHeight - 1, mHeight - 1);
 
 		// Setup a full screen scissor rectangle
 		mFullscreenScissor.mMinX = 0;
@@ -239,10 +298,10 @@ public:
 		// Adjust clip planes to include a small guard band to avoid clipping leaks
 		float guardBandWidth = (2.0f / (float)mWidth) * GUARD_BAND_PIXEL_SIZE;
 		float guardBandHeight = (2.0f / (float)mHeight) * GUARD_BAND_PIXEL_SIZE;
-		mCSFrustumPlanes[1] = _mm_setr_ps(1.0f - guardBandWidth, 0.0f, 1.0f, 0.0f);
-		mCSFrustumPlanes[2] = _mm_setr_ps(-1.0f + guardBandWidth, 0.0f, 1.0f, 0.0f);
-		mCSFrustumPlanes[3] = _mm_setr_ps(0.0f, 1.0f - guardBandHeight, 1.0f, 0.0f);
-		mCSFrustumPlanes[4] = _mm_setr_ps(0.0f, -1.0f + guardBandHeight, 1.0f, 0.0f);
+		mCSFrustumPlanes[1] = (moc__m128)_mm_setr_ps(1.0f - guardBandWidth, 0.0f, 1.0f, 0.0f);
+		mCSFrustumPlanes[2] = (moc__m128)_mm_setr_ps(-1.0f + guardBandWidth, 0.0f, 1.0f, 0.0f);
+		mCSFrustumPlanes[3] = (moc__m128)_mm_setr_ps(0.0f, 1.0f - guardBandHeight, 1.0f, 0.0f);
+		mCSFrustumPlanes[4] = (moc__m128)_mm_setr_ps(0.0f, -1.0f + guardBandHeight, 1.0f, 0.0f);
 
 		// Allocate masked hierarchical Z buffer (if zero size leave at nullptr)
 		if( mTilesWidth * mTilesHeight > 0 )
@@ -265,7 +324,7 @@ public:
 	{
 		// Setup the near frustum plane
 		mNearDist = nearDist;
-		mCSFrustumPlanes[0] = _mm_setr_ps(0.0f, 0.0f, 1.0f, -nearDist);
+		mCSFrustumPlanes[0] = (moc__m128)_mm_setr_ps(0.0f, 0.0f, 1.0f, -nearDist);
 	}
 
 	float GetNearClipPlane() override
@@ -280,15 +339,15 @@ public:
 		// Iterate through all depth tiles and clear to default values
 		for (int i = 0; i < mTilesWidth * mTilesHeight; i++)
 		{
-			mMaskedHiZBuffer[i].mMask = _mmw_setzero_epi32();
+			mMaskedHiZBuffer[i].mMask = (__mwi)_mmw_setzero_epi32();
 
 			// Clear z0 to beyond infinity to ensure we never merge with clear data
-			mMaskedHiZBuffer[i].mZMin[0] = _mmw_set1_ps(-1.0f);
+			mMaskedHiZBuffer[i].mZMin[0] = (__mw)_mmw_set1_ps(-1.0f);
 #if QUICK_MASK != 0
 			// Clear z1 to nearest depth value as it is pushed back on each update
-			mMaskedHiZBuffer[i].mZMin[1] = _mmw_set1_ps(FLT_MAX);
+			mMaskedHiZBuffer[i].mZMin[1] = (__mw)_mmw_set1_ps(FLT_MAX);
 #else
-			mMaskedHiZBuffer[i].mZMin[1] = _mmw_setzero_ps();
+			mMaskedHiZBuffer[i].mZMin[1] = (__mw)_mmw_setzero_ps();
 #endif
 		}
 
@@ -301,17 +360,17 @@ public:
 	// Polygon clipping functions
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	FORCE_INLINE int ClipPolygon(__m128 *outVtx, __m128 *inVtx, const __m128 &plane, int n) const
+	FORCE_INLINE int ClipPolygon(moc__m128 *outVtx, moc__m128 *inVtx, const moc__m128 &plane, int n) const
 	{
-		__m128 p0 = inVtx[n - 1];
-		__m128 dist0 = _mmx_dp4_ps(p0, plane);
+		moc__m128 p0 = inVtx[n - 1];
+		moc__m128 dist0 = (moc__m128)_mmx_dp4_ps(p0, plane);
 
 		// Loop over all polygon edges and compute intersection with clip plane (if any)
 		int nout = 0;
 		for (int k = 0; k < n; k++)
 		{
-			__m128 p1 = inVtx[k];
-			__m128 dist1 = _mmx_dp4_ps(p1, plane);
+			moc__m128 p1 = inVtx[k];
+			moc__m128 dist1 = _mmx_dp4_ps(p1, plane);
 			int dist0Neg = _mm_movemask_ps(dist0);
 			if (!dist0Neg)	// dist0 > 0.0f
 				outVtx[nout++] = p0;
@@ -322,13 +381,13 @@ public:
 				// Always clip from the positive side to avoid T-junctions
 				if (!dist0Neg)
 				{
-					__m128 t = dist0 / (dist0 - dist1);
-					outVtx[nout++] = _mmx_fmadd_ps(p1 - p0, t, p0);
+					moc__m128 t = dist0 / (dist0 - dist1);
+					outVtx[nout++] = (moc__m128)_mmx_fmadd_ps(p1 - p0, t, p0);
 				}
 				else
 				{
-					__m128 t = dist1 / (dist1 - dist0);
-					outVtx[nout++] = _mmx_fmadd_ps(p0 - p1, t, p1);
+					moc__m128 t = dist1 / (dist1 - dist0);
+					outVtx[nout++] = (moc__m128)_mmx_fmadd_ps(p0 - p1, t, p1);
 				}
 			}
 
@@ -355,12 +414,12 @@ public:
 			case ClipPlanes::CLIP_PLANE_RIGHT:  planeDp[i] = vtxW[i] - vtxX[i]; break;
 			case ClipPlanes::CLIP_PLANE_BOTTOM: planeDp[i] = vtxW[i] + vtxY[i]; break;
 			case ClipPlanes::CLIP_PLANE_TOP:    planeDp[i] = vtxW[i] - vtxY[i]; break;
-			case ClipPlanes::CLIP_PLANE_NEAR:   planeDp[i] = vtxW[i] - _mmw_set1_ps(mNearDist); break;
+			case ClipPlanes::CLIP_PLANE_NEAR:   planeDp[i] = vtxW[i] - __mw(_mmw_set1_ps(mNearDist)); break;
 			}
 		}
 
 		// Look at FP sign and determine if tri is inside, outside or straddles the frustum plane
-		__mw inside = _mmw_andnot_ps(planeDp[0], _mmw_andnot_ps(planeDp[1], ~planeDp[2]));
+		__mw inside = (__mw)_mmw_andnot_ps(planeDp[0], _mmw_andnot_ps(planeDp[1], ~planeDp[2]));
 		__mw outside = planeDp[0] & planeDp[1] & planeDp[2];
 		unsigned int inMask = (unsigned int)_mmw_movemask_ps(inside);
 		unsigned int outMask = (unsigned int)_mmw_movemask_ps(outside);
@@ -368,7 +427,7 @@ public:
 		triMask &= ~outMask;
 	}
 
-	FORCE_INLINE void ClipTriangleAndAddToBuffer(__mw *vtxX, __mw *vtxY, __mw *vtxW, __m128 *clippedTrisBuffer, int &clipWriteIdx, unsigned int &triMask, unsigned int triClipMask, ClipPlanes clipPlaneMask)
+	FORCE_INLINE void ClipTriangleAndAddToBuffer(__mw *vtxX, __mw *vtxY, __mw *vtxW, moc__m128 *clippedTrisBuffer, int &clipWriteIdx, unsigned int &triMask, unsigned int triClipMask, ClipPlanes clipPlaneMask)
 	{
 		if (!triClipMask)
 			return;
@@ -382,7 +441,7 @@ public:
 		TestClipPlane<ClipPlanes::CLIP_PLANE_TOP>(vtxX, vtxY, vtxW, straddleMask[4], triMask, clipPlaneMask);
 
 		// Clip triangle against straddling planes and add to the clipped triangle buffer
-		__m128 vtxBuf[2][8];
+		moc__m128 vtxBuf[2][8];
 		unsigned int clipMask = (straddleMask[0] | straddleMask[1] | straddleMask[2] | straddleMask[3] | straddleMask[4]) & (triClipMask & triMask);
 		while (clipMask)
 		{
@@ -394,7 +453,7 @@ public:
 			int bufIdx = 0;
 			int nClippedVerts = 3;
 			for (int i = 0; i < 3; i++)
-				vtxBuf[0][i] = _mm_setr_ps(vtxX[i].mw_f32[triIdx], vtxY[i].mw_f32[triIdx], vtxW[i].mw_f32[triIdx], 1.0f);
+				vtxBuf[0][i] = (moc__m128)_mm_setr_ps(vtxX[i].mw_f32[triIdx], vtxY[i].mw_f32[triIdx], vtxW[i].mw_f32[triIdx], 1.0f);
 
 			// Clip triangle with straddling planes. 
 			for (int i = 0; i < 5; ++i)
@@ -440,9 +499,9 @@ public:
 			for (int i = 0; i < 3; ++i)
 			{
 				__mw tmpX, tmpY, tmpW;
-				tmpX = _mmw_fmadd_ps(vtxX[i], _mmw_set1_ps(modelToClipMatrix[0]), _mmw_fmadd_ps(vtxY[i], _mmw_set1_ps(modelToClipMatrix[4]), _mmw_fmadd_ps(vtxW[i], _mmw_set1_ps(modelToClipMatrix[8]), _mmw_set1_ps(modelToClipMatrix[12]))));
-				tmpY = _mmw_fmadd_ps(vtxX[i], _mmw_set1_ps(modelToClipMatrix[1]), _mmw_fmadd_ps(vtxY[i], _mmw_set1_ps(modelToClipMatrix[5]), _mmw_fmadd_ps(vtxW[i], _mmw_set1_ps(modelToClipMatrix[9]), _mmw_set1_ps(modelToClipMatrix[13]))));
-				tmpW = _mmw_fmadd_ps(vtxX[i], _mmw_set1_ps(modelToClipMatrix[3]), _mmw_fmadd_ps(vtxY[i], _mmw_set1_ps(modelToClipMatrix[7]), _mmw_fmadd_ps(vtxW[i], _mmw_set1_ps(modelToClipMatrix[11]), _mmw_set1_ps(modelToClipMatrix[15]))));
+				tmpX = (__mw)_mmw_fmadd_ps(vtxX[i], _mmw_set1_ps(modelToClipMatrix[0]), _mmw_fmadd_ps(vtxY[i], _mmw_set1_ps(modelToClipMatrix[4]), _mmw_fmadd_ps(vtxW[i], _mmw_set1_ps(modelToClipMatrix[8]), _mmw_set1_ps(modelToClipMatrix[12]))));
+				tmpY = (__mw)_mmw_fmadd_ps(vtxX[i], _mmw_set1_ps(modelToClipMatrix[1]), _mmw_fmadd_ps(vtxY[i], _mmw_set1_ps(modelToClipMatrix[5]), _mmw_fmadd_ps(vtxW[i], _mmw_set1_ps(modelToClipMatrix[9]), _mmw_set1_ps(modelToClipMatrix[13]))));
+				tmpW = (__mw)_mmw_fmadd_ps(vtxX[i], _mmw_set1_ps(modelToClipMatrix[3]), _mmw_fmadd_ps(vtxY[i], _mmw_set1_ps(modelToClipMatrix[7]), _mmw_fmadd_ps(vtxW[i], _mmw_set1_ps(modelToClipMatrix[11]), _mmw_set1_ps(modelToClipMatrix[15]))));
 				vtxX[i] = tmpX;	vtxY[i] = tmpY;	vtxW[i] = tmpW;
 			}
 		}
@@ -461,7 +520,7 @@ public:
 		for (int i = 0; i < 3; i++)
 		{
 			int idx = vertexOrder[i];
-			__mw rcpW = _mmw_set1_ps(1.0f) / vtxW[i];
+			__mw rcpW = __mw(_mmw_set1_ps(1.0f)) / vtxW[i];
 			ipVtxX[idx] = _mmw_cvtps_epi32(_mmw_fmadd_ps(vtxX[i] * mHalfWidth, rcpW, mCenterX) * _mmw_set1_ps(float(1 << FP_BITS)));
 			ipVtxY[idx] = _mmw_cvtps_epi32(_mmw_fmadd_ps(vtxY[i] * mHalfHeight, rcpW, mCenterY) * _mmw_set1_ps(float(1 << FP_BITS)));
 			pVtxX[idx] = _mmw_cvtepi32_ps(ipVtxX[idx]) * _mmw_set1_ps(FP_INV);
@@ -481,62 +540,17 @@ public:
 		for (int i = 0; i < 3; i++)
 		{
 			int idx = vertexOrder[i];
-			__mw rcpW = _mmw_set1_ps(1.0f) / vtxW[i];
+			__mw rcpW = __mw(_mmw_set1_ps(1.0f)) / vtxW[i];
 
 			// The rounding modes are set to match HW rasterization with OpenGL. In practice our samples are placed
 			// in the (1,0) corner of each pixel, while HW rasterizer uses (0.5, 0.5). We get (1,0) because of the 
 			// floor used when interpolating along triangle edges. The rounding modes match an offset of (0.5, -0.5)
-			pVtxX[idx] = _mmw_ceil_ps(_mmw_fmadd_ps(vtxX[i] * mHalfWidth, rcpW, mCenterX));
-			pVtxY[idx] = _mmw_floor_ps(_mmw_fmadd_ps(vtxY[i] * mHalfHeight, rcpW, mCenterY));
+			pVtxX[idx] = (__mw)_mmw_ceil_ps((__mw)_mmw_fmadd_ps(vtxX[i] * mHalfWidth, rcpW, mCenterX));
+			pVtxY[idx] = (__mw)_mmw_floor_ps((__mw)_mmw_fmadd_ps(vtxY[i] * mHalfHeight, rcpW, mCenterY));
 			pVtxZ[idx] = rcpW;
 		}
 	}
 #endif
-
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Common SSE/AVX input assembly functions, note that there are specialized gathers for the general case in the SSE/AVX specific files
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	template<int N> FORCE_INLINE void VtxFetch4(__mw *v, const unsigned int *inTrisPtr, int triVtx, const float *inVtx, int numLanes)
-	{
-		// Fetch 4 vectors (matching 1 sse part of the SIMD register), and continue to the next
-		const int ssePart = (SIMD_LANES / 4) - N;
-		for (int k = 0; k < 4; k++)
-		{
-			int lane = 4 * ssePart + k;
-			if (numLanes > lane)
-				v[k] = _mmw_insertf32x4_ps(v[k], _mm_loadu_ps(&inVtx[inTrisPtr[lane * 3 + triVtx] << 2]), ssePart);
-		}
-		VtxFetch4<N - 1>(v, inTrisPtr, triVtx, inVtx, numLanes);
-	}
-	template<> FORCE_INLINE void VtxFetch4<0>(__mw *v, const unsigned int *inTrisPtr, int triVtx, const float *inVtx, int numLanes) {}
-
-	FORCE_INLINE void GatherVerticesFast(__mw *vtxX, __mw *vtxY, __mw *vtxW, const float *inVtx, const unsigned int *inTrisPtr, int numLanes)
-	{
-		// This function assumes that the vertex layout is four packed x, y, z, w-values.
-		// Since the layout is known we can get some additional performance by using a 
-		// more optimized gather strategy.
-		assert(numLanes >= 1);
-
-		// Gather vertices 
-		__mw v[4], swz[4];
-		for (int i = 0; i < 3; i++)
-		{
-			// Load 4 (x,y,z,w) vectors per SSE part of the SIMD register (so 4 vectors for SSE, 8 vectors for AVX)
-			// this fetch uses templates to unroll the loop
-			VtxFetch4<SIMD_LANES / 4>(v, inTrisPtr, i, inVtx, numLanes);
-
-			// Transpose each individual SSE part of the SSE/AVX register (similar to _MM_TRANSPOSE4_PS)
-			swz[0] = _mmw_shuffle_ps(v[0], v[1], 0x44);
-			swz[2] = _mmw_shuffle_ps(v[0], v[1], 0xEE);
-			swz[1] = _mmw_shuffle_ps(v[2], v[3], 0x44);
-			swz[3] = _mmw_shuffle_ps(v[2], v[3], 0xEE);
-
-			vtxX[i] = _mmw_shuffle_ps(swz[0], swz[1], 0x88);
-			vtxY[i] = _mmw_shuffle_ps(swz[0], swz[1], 0xDD);
-			vtxW[i] = _mmw_shuffle_ps(swz[2], swz[3], 0xDD);
-		}
-	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Rasterization functions
@@ -544,20 +558,20 @@ public:
 
 	FORCE_INLINE void ComputeBoundingBox(__mwi &bbminX, __mwi &bbminY, __mwi &bbmaxX, __mwi &bbmaxY, const __mw *vX, const __mw *vY, const ScissorRect *scissor)
 	{
-		static const __mwi SIMD_PAD_W_MASK = _mmw_set1_epi32(~(TILE_WIDTH - 1));
-		static const __mwi SIMD_PAD_H_MASK = _mmw_set1_epi32(~(TILE_HEIGHT - 1));
+		static const __mwi SIMD_PAD_W_MASK = (__mwi)_mmw_set1_epi32(~(TILE_WIDTH - 1));
+		static const __mwi SIMD_PAD_H_MASK = (__mwi)_mmw_set1_epi32(~(TILE_HEIGHT - 1));
 
 		// Find Min/Max vertices
-		bbminX = _mmw_cvttps_epi32(_mmw_min_ps(vX[0], _mmw_min_ps(vX[1], vX[2])));
-		bbminY = _mmw_cvttps_epi32(_mmw_min_ps(vY[0], _mmw_min_ps(vY[1], vY[2])));
-		bbmaxX = _mmw_cvttps_epi32(_mmw_max_ps(vX[0], _mmw_max_ps(vX[1], vX[2])));
-		bbmaxY = _mmw_cvttps_epi32(_mmw_max_ps(vY[0], _mmw_max_ps(vY[1], vY[2])));
+		bbminX = (__mwi)_mmw_cvttps_epi32(_mmw_min_ps(vX[0], _mmw_min_ps(vX[1], vX[2])));
+		bbminY = (__mwi)_mmw_cvttps_epi32(_mmw_min_ps(vY[0], _mmw_min_ps(vY[1], vY[2])));
+		bbmaxX = (__mwi)_mmw_cvttps_epi32(_mmw_max_ps(vX[0], _mmw_max_ps(vX[1], vX[2])));
+		bbmaxY = (__mwi)_mmw_cvttps_epi32(_mmw_max_ps(vY[0], _mmw_max_ps(vY[1], vY[2])));
 
 		// Clamp to tile boundaries
-		bbminX = _mmw_max_epi32(bbminX & SIMD_PAD_W_MASK, _mmw_set1_epi32(scissor->mMinX));
-		bbmaxX = _mmw_min_epi32((bbmaxX + TILE_WIDTH) & SIMD_PAD_W_MASK, _mmw_set1_epi32(scissor->mMaxX));
-		bbminY = _mmw_max_epi32(bbminY & SIMD_PAD_H_MASK, _mmw_set1_epi32(scissor->mMinY));
-		bbmaxY = _mmw_min_epi32((bbmaxY + TILE_HEIGHT) & SIMD_PAD_H_MASK, _mmw_set1_epi32(scissor->mMaxY));
+		bbminX = (__mwi)_mmw_max_epi32(bbminX & SIMD_PAD_W_MASK, (__mwi)_mmw_set1_epi32(scissor->mMinX));
+		bbmaxX = (__mwi)_mmw_min_epi32((bbmaxX + TILE_WIDTH) & SIMD_PAD_W_MASK, (__mwi)_mmw_set1_epi32(scissor->mMaxX));
+		bbminY = (__mwi)_mmw_max_epi32(bbminY & SIMD_PAD_H_MASK, (__mwi)_mmw_set1_epi32(scissor->mMinY));
+		bbmaxY = (__mwi)_mmw_min_epi32((bbmaxY + TILE_HEIGHT) & SIMD_PAD_H_MASK, (__mwi)_mmw_set1_epi32(scissor->mMaxY));
 	}
 
 	template<typename T> FORCE_INLINE void SortVertices(T *vX, T *vY)
@@ -567,7 +581,7 @@ public:
 		{
 			T ey1 = vY[1] - vY[0];
 			T ey2 = vY[2] - vY[0];
-			__mw swapMask = (simd_cast<__mw>(ey1 | ey2) | simd_cast<__mw>(_mmw_cmpeq_epi32(simd_cast<__mwi>(ey2), SIMD_BITS_ZERO)));
+			__mw swapMask = (simd_cast<__mw>(ey1 | ey2) | simd_cast<__mw>(__mwi(_mmw_cmpeq_epi32(simd_cast<__mwi>(ey2), SIMD_BITS_ZERO))));
 			T sX, sY;
 			sX = simd_cast<T>(_mmw_blendv_ps(simd_cast<__mw>(vX[2]), simd_cast<__mw>(vX[0]), swapMask));
 			vX[0] = simd_cast<T>(_mmw_blendv_ps(simd_cast<__mw>(vX[0]), simd_cast<__mw>(vX[1]), swapMask));
@@ -589,9 +603,9 @@ public:
 		__mw y2 = pVtxY[2] - pVtxY[0];
 		__mw z1 = pVtxZ[1] - pVtxZ[0];
 		__mw z2 = pVtxZ[2] - pVtxZ[0];
-		__mw d = _mmw_set1_ps(1.0f) / _mmw_fmsub_ps(x1, y2, y1 * x2);
-		zPixelDx = _mmw_fmsub_ps(z1, y2, y1 * z2) * d;
-		zPixelDy = _mmw_fmsub_ps(x1, z2, z1 * x2) * d;
+		__mw d = (__mw)_mmw_set1_ps(1.0f) / (__mw)_mmw_fmsub_ps(x1, y2, y1 * x2);
+		zPixelDx = __mw(_mmw_fmsub_ps(z1, y2, y1 * z2)) * d;
+		zPixelDy = __mw(_mmw_fmsub_ps(x1, z2, z1 * x2)) * d;
 	}
 
 	FORCE_INLINE void UpdateTileQuick(int tileIdx, const __mwi &coverage, const __mw &zTriv)
@@ -605,34 +619,34 @@ public:
 		__mw *zMin = mMaskedHiZBuffer[tileIdx].mZMin;
 
 		// Swizzle coverage mask to 8x4 subtiles and test if any subtiles are not covered at all
-		__mwi rastMask = _mmw_transpose_epi8(coverage);
-		__mwi deadLane = _mmw_cmpeq_epi32(rastMask, SIMD_BITS_ZERO);
+		__mwi rastMask = (__mwi)_mmw_transpose_epi8(coverage);
+		__mwi deadLane = (__mwi)_mmw_cmpeq_epi32(rastMask, SIMD_BITS_ZERO);
 
 		// Mask out all subtiles failing the depth test (don't update these subtiles)
-		deadLane |= _mmw_srai_epi32(simd_cast<__mwi>(zTriv - zMin[0]), 31);
-		rastMask = _mmw_andnot_epi32(deadLane, rastMask);
+		deadLane |= (__mwi)_mmw_srai_epi32(simd_cast<__mwi>(zTriv - zMin[0]), 31);
+		rastMask = (__mwi)_mmw_andnot_epi32(deadLane, rastMask);
 
 		// Use distance heuristic to discard layer 1 if incoming triangle is significantly nearer to observer
 		// than the buffer contents. See Section 3.2 in "Masked Software Occlusion Culling"
-		__mwi coveredLane = _mmw_cmpeq_epi32(rastMask, SIMD_BITS_ONE);
-		__mw diff = _mmw_fmsub_ps(zMin[1], _mmw_set1_ps(2.0f), zTriv + zMin[0]);
-		__mwi discardLayerMask = _mmw_andnot_epi32(deadLane, _mmw_srai_epi32(simd_cast<__mwi>(diff), 31) | coveredLane);
+		__mwi coveredLane = (__mwi)_mmw_cmpeq_epi32(rastMask, SIMD_BITS_ONE);
+		__mw diff = (__mw)_mmw_fmsub_ps(zMin[1], _mmw_set1_ps(2.0f), zTriv + zMin[0]);
+		__mwi discardLayerMask = (__mwi)_mmw_andnot_epi32(deadLane, (__mwi)_mmw_srai_epi32(simd_cast<__mwi>(diff), 31) | coveredLane);
 
 		// Update the mask with incoming triangle coverage
-		mask = _mmw_andnot_epi32(discardLayerMask, mask) | rastMask;
+		mask = (__mwi)_mmw_andnot_epi32(discardLayerMask, mask) | rastMask;
 
-		__mwi maskFull = _mmw_cmpeq_epi32(mask, SIMD_BITS_ONE);
+		__mwi maskFull = (__mwi)_mmw_cmpeq_epi32(mask, SIMD_BITS_ONE);
 
 		// Compute new value for zMin[1]. This has one of four outcomes: zMin[1] = min(zMin[1], zTriv),  zMin[1] = zTriv, 
 		// zMin[1] = FLT_MAX or unchanged, depending on if the layer is updated, discarded, fully covered, or not updated
-		__mw opA = _mmw_blendv_ps(zTriv, zMin[1], simd_cast<__mw>(deadLane));
-		__mw opB = _mmw_blendv_ps(zMin[1], zTriv, simd_cast<__mw>(discardLayerMask));
-		__mw z1min = _mmw_min_ps(opA, opB);
-		zMin[1] = _mmw_blendv_ps(z1min, _mmw_set1_ps(FLT_MAX), simd_cast<__mw>(maskFull));
+		__mw opA = (__mw)_mmw_blendv_ps(zTriv, zMin[1], simd_cast<__mw>(deadLane));
+		__mw opB = (__mw)_mmw_blendv_ps(zMin[1], zTriv, simd_cast<__mw>(discardLayerMask));
+		__mw z1min = (__mw)_mmw_min_ps(opA, opB);
+		zMin[1] = (__mw)_mmw_blendv_ps(z1min, (__mw)_mmw_set1_ps(FLT_MAX), simd_cast<__mw>(maskFull));
 
 		// Propagate zMin[1] back to zMin[0] if tile was fully covered, and update the mask
-		zMin[0] = _mmw_blendv_ps(zMin[0], z1min, simd_cast<__mw>(maskFull));
-		mMaskedHiZBuffer[tileIdx].mMask = _mmw_andnot_epi32(maskFull, mask);
+		zMin[0] = (__mw)_mmw_blendv_ps(zMin[0], z1min, simd_cast<__mw>(maskFull));
+		mMaskedHiZBuffer[tileIdx].mMask = (__mwi)_mmw_andnot_epi32(maskFull, mask);
 	}
 
 	FORCE_INLINE void UpdateTileAccurate(int tileIdx, const __mwi &coverage, const __mw &zTriv)
@@ -643,18 +657,18 @@ public:
 		__mwi &mask = mMaskedHiZBuffer[tileIdx].mMask;
 
 		// Swizzle coverage mask to 8x4 subtiles
-		__mwi rastMask = _mmw_transpose_epi8(coverage);
+		__mwi rastMask = (__mwi)_mmw_transpose_epi8(coverage);
 
 		// Perform individual depth tests with layer 0 & 1 and mask out all failing pixels 
 		__mw sdist0 = zMin[0] - zTriv;
 		__mw sdist1 = zMin[1] - zTriv;
-		__mwi sign0 = _mmw_srai_epi32(simd_cast<__mwi>(sdist0), 31);
-		__mwi sign1 = _mmw_srai_epi32(simd_cast<__mwi>(sdist1), 31);
-		__mwi triMask = rastMask & (_mmw_andnot_epi32(mask, sign0) | (mask & sign1));
+		__mwi sign0 = (__mwi)_mmw_srai_epi32(simd_cast<__mwi>(sdist0), 31);
+		__mwi sign1 = (__mwi)_mmw_srai_epi32(simd_cast<__mwi>(sdist1), 31);
+		__mwi triMask = rastMask & ((__mwi)_mmw_andnot_epi32(mask, sign0) | (mask & sign1));
 
 		// Early out if no pixels survived the depth test (this test is more accurate than
 		// the early culling test in TraverseScanline())
-		__mwi t0 = _mmw_cmpeq_epi32(triMask, SIMD_BITS_ZERO);
+		__mwi t0 = (__mwi)_mmw_cmpeq_epi32(triMask, SIMD_BITS_ZERO);
 		__mwi t0inv = ~t0;
 		if (_mmw_testz_epi32(t0inv, t0inv))
 			return;
@@ -664,12 +678,12 @@ public:
 		__mw zTri = _mmw_blendv_ps(zTriv, zMin[0], simd_cast<__mw>(t0));
 
 		// Test if incoming triangle completely overwrites layer 0 or 1
-		__mwi layerMask0 = _mmw_andnot_epi32(triMask, ~mask);
-		__mwi layerMask1 = _mmw_andnot_epi32(triMask, mask);
-		__mwi lm0 = _mmw_cmpeq_epi32(layerMask0, SIMD_BITS_ZERO);
-		__mwi lm1 = _mmw_cmpeq_epi32(layerMask1, SIMD_BITS_ZERO);
-		__mw z0 = _mmw_blendv_ps(zMin[0], zTri, simd_cast<__mw>(lm0));
-		__mw z1 = _mmw_blendv_ps(zMin[1], zTri, simd_cast<__mw>(lm1));
+		__mwi layerMask0 = (__mwi)_mmw_andnot_epi32(triMask, ~mask);
+		__mwi layerMask1 = (__mwi)_mmw_andnot_epi32(triMask, mask);
+		__mwi lm0 = (__mwi)_mmw_cmpeq_epi32(layerMask0, SIMD_BITS_ZERO);
+		__mwi lm1 = (__mwi)_mmw_cmpeq_epi32(layerMask1, SIMD_BITS_ZERO);
+		__mw z0 = (__mw)_mmw_blendv_ps(zMin[0], zTri, simd_cast<__mw>(lm0));
+		__mw z1 = (__mw)_mmw_blendv_ps(zMin[1], zTri, simd_cast<__mw>(lm1));
 
 		// Compute distances used for merging heuristic
 		__mw d0 = abs(sdist0);
@@ -684,7 +698,7 @@ public:
 		// overwrite. d0min indicates that the triangle will overwrite layer 0, and 
 		// d1min flags that the triangle will overwrite layer 1.
 		__mwi d0min = (c01 & c02) | (lm0 | t0);
-		__mwi d1min = _mmw_andnot_epi32(d0min, c12 | lm1);
+		__mwi d1min = (__mwi)_mmw_andnot_epi32(d0min, c12 | lm1);
 
 		///////////////////////////////////////////////////////////////////////////////
 		// Update depth buffer entry. NOTE: we always merge into layer 0, so if the 
@@ -694,14 +708,14 @@ public:
 
 		// Update mask based on which layer the triangle overwrites or was merged into
 		__mw inner = _mmw_blendv_ps(simd_cast<__mw>(triMask), simd_cast<__mw>(layerMask1), simd_cast<__mw>(d0min));
-		mask = simd_cast<__mwi>(_mmw_blendv_ps(inner, simd_cast<__mw>(layerMask0), simd_cast<__mw>(d1min)));
+		mask = simd_cast<__mwi>(__mw(_mmw_blendv_ps(inner, simd_cast<__mw>(layerMask0), simd_cast<__mw>(d1min))));
 
 		// Update the zMin[0] value. There are four outcomes: overwrite with layer 1,
 		// merge with layer 1, merge with zTri or overwrite with layer 1 and then merge
 		// with zTri.
 		__mw e0 = _mmw_blendv_ps(z0, z1, simd_cast<__mw>(d1min));
 		__mw e1 = _mmw_blendv_ps(z1, zTri, simd_cast<__mw>(d1min | d0min));
-		zMin[0] = _mmw_min_ps(e0, e1);
+		zMin[0] = (__mw)_mmw_min_ps(e0, e1);
 
 		// Update the zMin[1] value. There are three outcomes: keep current value,
 		// overwrite with zTri, or overwrite with z1
@@ -716,9 +730,9 @@ public:
 		int eventOffset = leftOffset << TILE_WIDTH_SHIFT;
 		__mwi right[NRIGHT], left[NLEFT];
 		for (int i = 0; i < NRIGHT; ++i)
-			right[i] = _mmw_max_epi32(_mmw_srai_epi32(events[rightEvent + i], FP_BITS) - eventOffset, SIMD_BITS_ZERO);
+			right[i] = _mmw_max_epi32(__mwi( _mmw_srai_epi32(events[rightEvent + i], FP_BITS) ) - eventOffset, SIMD_BITS_ZERO);
 		for (int i = 0; i < NLEFT; ++i)
-			left[i] = _mmw_max_epi32(_mmw_srai_epi32(events[leftEvent - i], FP_BITS) - eventOffset, SIMD_BITS_ZERO);
+			left[i] = _mmw_max_epi32(__mwi( _mmw_srai_epi32(events[leftEvent - i], FP_BITS) ) - eventOffset, SIMD_BITS_ZERO);
 
 		__mw z0 = iz0 + zx*leftOffset;
 		int tileIdxEnd = tileIdx + rightOffset;
@@ -737,8 +751,8 @@ public:
 #else
 			// Compute zMin for the overlapped layers 
 			__mwi mask = mMaskedHiZBuffer[tileIdx].mMask;
-			__mw zMin0 = _mmw_blendv_ps(mMaskedHiZBuffer[tileIdx].mZMin[0], mMaskedHiZBuffer[tileIdx].mZMin[1], simd_cast<__mw>(_mmw_cmpeq_epi32(mask, _mmw_set1_epi32(~0))));
-			__mw zMin1 = _mmw_blendv_ps(mMaskedHiZBuffer[tileIdx].mZMin[1], mMaskedHiZBuffer[tileIdx].mZMin[0], simd_cast<__mw>(_mmw_cmpeq_epi32(mask, _mmw_setzero_epi32())));
+			__mw zMin0 = _mmw_blendv_ps(mMaskedHiZBuffer[tileIdx].mZMin[0], mMaskedHiZBuffer[tileIdx].mZMin[1], simd_cast<__mw>(__mwi(_mmw_cmpeq_epi32(mask, _mmw_set1_epi32(~0)))));
+			__mw zMin1 = _mmw_blendv_ps(mMaskedHiZBuffer[tileIdx].mZMin[1], mMaskedHiZBuffer[tileIdx].mZMin[0], simd_cast<__mw>(__mwi(_mmw_cmpeq_epi32(mask, _mmw_setzero_epi32()))));
 			__mw zMinBuf = _mmw_min_ps(zMin0, zMin1);
 #endif
 			__mw dist0 = zTriMax - zMinBuf;
@@ -755,7 +769,7 @@ public:
 				{
 					// Perform a conservative visibility test (test zMax against buffer for each covered 8x4 subtile)
 					__mw zSubTileMax = _mmw_min_ps(z0, zTriMax);
-					__mwi zPass = simd_cast<__mwi>(_mmw_cmpge_ps(zSubTileMax, zMinBuf));
+					__mwi zPass = simd_cast<__mwi>(__mw(_mmw_cmpge_ps(zSubTileMax, zMinBuf)));
 
 					__mwi rastMask = _mmw_transpose_epi8(accumulatedMask);
 					__mwi deadLane = _mmw_cmpeq_epi32(rastMask, SIMD_BITS_ZERO);
@@ -843,15 +857,15 @@ public:
 
 		// Get deltas used to increment edge events each time we traverse one scanline of tiles
 		__mwi triSlopeTileDelta[3];
-		triSlopeTileDelta[0] = _mmw_set1_epi32(slopeTileDelta[0].mw_i32[triIdx]);
-		triSlopeTileDelta[1] = _mmw_set1_epi32(slopeTileDelta[1].mw_i32[triIdx]);
-		triSlopeTileDelta[2] = _mmw_set1_epi32(slopeTileDelta[2].mw_i32[triIdx]);
+		triSlopeTileDelta[0] = (__mwi)_mmw_set1_epi32(slopeTileDelta[0].mw_i32[triIdx]);
+		triSlopeTileDelta[1] = (__mwi)_mmw_set1_epi32(slopeTileDelta[1].mw_i32[triIdx]);
+		triSlopeTileDelta[2] = (__mwi)_mmw_set1_epi32(slopeTileDelta[2].mw_i32[triIdx]);
 
 		// Setup edge events for first batch of SIMD_LANES scanlines
 		__mwi triEvent[3];
-		triEvent[0] = _mmw_set1_epi32(eventStart[0].mw_i32[triIdx]) + _mmw_mullo_epi32(SIMD_LANE_IDX, _mmw_set1_epi32(slope[0].mw_i32[triIdx]));
-		triEvent[1] = _mmw_set1_epi32(eventStart[1].mw_i32[triIdx]) + _mmw_mullo_epi32(SIMD_LANE_IDX, _mmw_set1_epi32(slope[1].mw_i32[triIdx]));
-		triEvent[2] = _mmw_set1_epi32(eventStart[2].mw_i32[triIdx]) + _mmw_mullo_epi32(SIMD_LANE_IDX, _mmw_set1_epi32(slope[2].mw_i32[triIdx]));
+		triEvent[0] = __mwi( _mmw_set1_epi32(eventStart[0].mw_i32[triIdx]) ) + __mwi( _mmw_mullo_epi32(SIMD_LANE_IDX, (__mwi)_mmw_set1_epi32(slope[0].mw_i32[triIdx])) );
+		triEvent[1] = __mwi( _mmw_set1_epi32(eventStart[1].mw_i32[triIdx]) ) + __mwi( _mmw_mullo_epi32(SIMD_LANE_IDX, (__mwi)_mmw_set1_epi32(slope[1].mw_i32[triIdx])) );
+		triEvent[2] = __mwi( _mmw_set1_epi32(eventStart[2].mw_i32[triIdx]) ) + __mwi( _mmw_mullo_epi32(SIMD_LANE_IDX, (__mwi)_mmw_set1_epi32(slope[2].mw_i32[triIdx])) );
 #endif
 
 		// For big triangles track start & end tile for each scanline and only traverse the valid region
@@ -1033,10 +1047,10 @@ public:
 		ComputeBoundingBox(bbPixelMinX, bbPixelMinY, bbPixelMaxX, bbPixelMaxY, pVtxX, pVtxY, scissor);
 
 		// Clamp bounding box to tiles (it's already padded in computeBoundingBox)
-		__mwi bbTileMinX = _mmw_srai_epi32(bbPixelMinX, TILE_WIDTH_SHIFT);
-		__mwi bbTileMinY = _mmw_srai_epi32(bbPixelMinY, TILE_HEIGHT_SHIFT);
-		__mwi bbTileMaxX = _mmw_srai_epi32(bbPixelMaxX, TILE_WIDTH_SHIFT);
-		__mwi bbTileMaxY = _mmw_srai_epi32(bbPixelMaxY, TILE_HEIGHT_SHIFT);
+		__mwi bbTileMinX = (__mwi)_mmw_srai_epi32(bbPixelMinX, TILE_WIDTH_SHIFT);
+		__mwi bbTileMinY = (__mwi)_mmw_srai_epi32(bbPixelMinY, TILE_HEIGHT_SHIFT);
+		__mwi bbTileMaxX = (__mwi)_mmw_srai_epi32(bbPixelMaxX, TILE_WIDTH_SHIFT);
+		__mwi bbTileMaxY = (__mwi)_mmw_srai_epi32(bbPixelMaxY, TILE_HEIGHT_SHIFT);
 		__mwi bbTileSizeX = bbTileMaxX - bbTileMinX;
 		__mwi bbTileSizeY = bbTileMaxY - bbTileMinY;
 
@@ -1056,19 +1070,19 @@ public:
 		ComputeDepthPlane(pVtxX, pVtxY, pVtxZ, zPixelDx, zPixelDy);
 
 		// Compute z value at min corner of bounding box. Offset to make sure z is conservative for all 8x4 subtiles
-		__mw bbMinXV0 = _mmw_cvtepi32_ps(bbPixelMinX) - pVtxX[0];
-		__mw bbMinYV0 = _mmw_cvtepi32_ps(bbPixelMinY) - pVtxY[0];
-		__mw zPlaneOffset = _mmw_fmadd_ps(zPixelDx, bbMinXV0, _mmw_fmadd_ps(zPixelDy, bbMinYV0, pVtxZ[0]));
-		__mw zTileDx = zPixelDx * _mmw_set1_ps((float)TILE_WIDTH);
-		__mw zTileDy = zPixelDy * _mmw_set1_ps((float)TILE_HEIGHT);
+		__mw bbMinXV0 = __mw(_mmw_cvtepi32_ps(bbPixelMinX)) - pVtxX[0];
+		__mw bbMinYV0 = __mw(_mmw_cvtepi32_ps(bbPixelMinY)) - pVtxY[0];
+		__mw zPlaneOffset = (__mw)_mmw_fmadd_ps(zPixelDx, bbMinXV0, _mmw_fmadd_ps(zPixelDy, bbMinYV0, pVtxZ[0]));
+		__mw zTileDx = zPixelDx * __mw(_mmw_set1_ps((float)TILE_WIDTH));
+		__mw zTileDy = zPixelDy * __mw(_mmw_set1_ps((float)TILE_HEIGHT));
 		if (TEST_Z)
-			zPlaneOffset += _mmw_max_ps(_mmw_setzero_ps(), zPixelDx*(float)SUB_TILE_WIDTH) + _mmw_max_ps(_mmw_setzero_ps(), zPixelDy*(float)SUB_TILE_HEIGHT);
-		else
-			zPlaneOffset += _mmw_min_ps(_mmw_setzero_ps(), zPixelDx*(float)SUB_TILE_WIDTH) + _mmw_min_ps(_mmw_setzero_ps(), zPixelDy*(float)SUB_TILE_HEIGHT);
+			zPlaneOffset += (__mw)_mmw_max_ps(_mmw_setzero_ps(), zPixelDx*(float)SUB_TILE_WIDTH) + (__mw)_mmw_max_ps(_mmw_setzero_ps(), zPixelDy*(float)SUB_TILE_HEIGHT);
+		else                                                                                      
+			zPlaneOffset += (__mw)_mmw_min_ps(_mmw_setzero_ps(), zPixelDx*(float)SUB_TILE_WIDTH) + (__mw)_mmw_min_ps(_mmw_setzero_ps(), zPixelDy*(float)SUB_TILE_HEIGHT);
 
 		// Compute Zmin and Zmax for the triangle (used to narrow the range for difficult tiles)
-		__mw zMin = _mmw_min_ps(pVtxZ[0], _mmw_min_ps(pVtxZ[1], pVtxZ[2]));
-		__mw zMax = _mmw_max_ps(pVtxZ[0], _mmw_max_ps(pVtxZ[1], pVtxZ[2]));
+		__mw zMin = (__mw)_mmw_min_ps(pVtxZ[0], _mmw_min_ps(pVtxZ[1], pVtxZ[2]));
+		__mw zMax = (__mw)_mmw_max_ps(pVtxZ[0], _mmw_max_ps(pVtxZ[1], pVtxZ[2]));
 
 		//////////////////////////////////////////////////////////////////////////////
 		// Sort vertices (v0 has lowest Y, and the rest is in winding order) and
@@ -1094,10 +1108,10 @@ public:
 		// Compute edge events for the bottom of the bounding box, or for the middle tile in case of 
 		// the edge originating from the middle vertex.
 		__mwi xDiffi[2], yDiffi[2];
-		xDiffi[0] = ipVtxX[0] - _mmw_slli_epi32(bbPixelMinX, FP_BITS);
-		xDiffi[1] = midPixelX - _mmw_slli_epi32(bbPixelMinX, FP_BITS);
-		yDiffi[0] = ipVtxY[0] - _mmw_slli_epi32(bbPixelMinY, FP_BITS);
-		yDiffi[1] = midPixelY - _mmw_slli_epi32(bbMidTileY, FP_BITS + TILE_HEIGHT_SHIFT);
+		xDiffi[0] = ipVtxX[0] - __mwi(_mmw_slli_epi32(bbPixelMinX, FP_BITS));
+		xDiffi[1] = midPixelX - __mwi(_mmw_slli_epi32(bbPixelMinX, FP_BITS));
+		yDiffi[0] = ipVtxY[0] - __mwi(_mmw_slli_epi32(bbPixelMinY, FP_BITS));
+		yDiffi[1] = midPixelY - __mwi(_mmw_slli_epi32(bbMidTileY, FP_BITS + TILE_HEIGHT_SHIFT));
 
 		//////////////////////////////////////////////////////////////////////////////
 		// Edge slope setup - Note we do not conform to DX/GL rasterization rules
@@ -1123,8 +1137,8 @@ public:
 		slope[1] = _mmw_blendv_ps(slope[1], -horizontalSlopeDelta, simd_cast<__mw>(horizontalSlope1));
 
 		__mwi vy[3] = { yDiffi[0], yDiffi[1], yDiffi[0] };
-		vy[0] = _mmw_blendv_epi32(yDiffi[0], ((yDiffi[0] + _mmw_set1_epi32(FP_HALF_PIXEL - 1)) & _mmw_set1_epi32((~0) << FP_BITS)), horizontalSlope0);
-		vy[1] = _mmw_blendv_epi32(yDiffi[1], ((yDiffi[1] + _mmw_set1_epi32(FP_HALF_PIXEL - 1)) & _mmw_set1_epi32((~0) << FP_BITS)), horizontalSlope1);
+		vy[0] = _mmw_blendv_epi32(yDiffi[0], ((yDiffi[0] + __mwi(_mmw_set1_epi32(FP_HALF_PIXEL - 1))) & __mwi(_mmw_set1_epi32((~0u) << FP_BITS))), horizontalSlope0);
+		vy[1] = _mmw_blendv_epi32(yDiffi[1], ((yDiffi[1] + __mwi(_mmw_set1_epi32(FP_HALF_PIXEL - 1))) & __mwi(_mmw_set1_epi32((~0u) << FP_BITS))), horizontalSlope1);
 
 		// Compute edge events for the bottom of the bounding box, or for the middle tile in case of 
 		// the edge originating from the middle vertex.
@@ -1139,22 +1153,22 @@ public:
 			// Delta and error term for one vertical tile step. The exact delta is exactDelta = edgeX / edgeY, due to limited precision we 
 			// repersent the delta as delta = qoutient + remainder / edgeY, where quotient = int(edgeX / edgeY). In this case, since we step 
 			// one tile of scanlines at a time, the slope is computed for a tile-sized step.
-			slopeTileDelta[i] = _mmw_cvttps_epi32(slope[i] * _mmw_set1_ps(FP_TILE_HEIGHT));
-			slopeTileRemainder[i] = _mmw_slli_epi32(absEdgeX[i], FP_TILE_HEIGHT_SHIFT) - _mmw_mullo_epi32(_mmw_abs_epi32(slopeTileDelta[i]), edgeY[i]);
+			slopeTileDelta[i] = _mmw_cvttps_epi32(slope[i] * __mw(_mmw_set1_ps(FP_TILE_HEIGHT)));
+			slopeTileRemainder[i] = __mwi(_mmw_slli_epi32(absEdgeX[i], FP_TILE_HEIGHT_SHIFT)) - __mwi(_mmw_mullo_epi32(_mmw_abs_epi32(slopeTileDelta[i]), edgeY[i]));
 
 			// Jump to bottom scanline of tile row, this is the bottom of the bounding box, or the middle vertex of the triangle.
 			// The jump can be in both positive and negative y-direction due to clipping / offscreen vertices.
 			__mwi tileStartDir = _mmw_blendv_epi32(slopeSign[i], -slopeSign[i], vy[i]);
 			__mwi tieBreaker = _mmw_blendv_epi32(_mmw_set1_epi32(0), _mmw_set1_epi32(1), tileStartDir);
-			__mwi tileStartSlope = _mmw_cvttps_epi32(slope[i] * _mmw_cvtepi32_ps(-vy[i]));
+			__mwi tileStartSlope = _mmw_cvttps_epi32(slope[i] * __mw(_mmw_cvtepi32_ps(-vy[i])));
 			__mwi tileStartRemainder = (_mmw_mullo_epi32(absEdgeX[i], _mmw_abs_epi32(vy[i])) - _mmw_mullo_epi32(_mmw_abs_epi32(tileStartSlope), edgeY[i]));
 			
 			eventStartRemainder[i] = tileStartRemainder - tieBreaker;
 			__mwi overflow = _mmw_srai_epi32(eventStartRemainder[i], 31);
 			eventStartRemainder[i] += overflow & edgeY[i];
-			eventStartRemainder[i] = _mmw_blendv_epi32(eventStartRemainder[i], edgeY[i] - eventStartRemainder[i] - _mmw_set1_epi32(1), vy[i]);
+			eventStartRemainder[i] = _mmw_blendv_epi32(eventStartRemainder[i], edgeY[i] - eventStartRemainder[i] - __mwi(_mmw_set1_epi32(1)), vy[i]);
 			
-			eventStart[i] = xDiffi[i & 1] + tileStartSlope + (overflow & tileStartDir) + _mmw_set1_epi32(FP_HALF_PIXEL - 1) + tieBreaker;
+			eventStart[i] = xDiffi[i & 1] + tileStartSlope + (overflow & tileStartDir) + __mwi(_mmw_set1_epi32(FP_HALF_PIXEL - 1)) + tieBreaker;
 		}
 
 #else // PRECISE_COVERAGE
@@ -1169,7 +1183,7 @@ public:
 		int midVtxRight = ~_mmw_movemask_ps(edgeY[1]);
 		__mw midPixelX = _mmw_blendv_ps(pVtxX[1], pVtxX[2], edgeY[1]);
 		__mw midPixelY = _mmw_blendv_ps(pVtxY[1], pVtxY[2], edgeY[1]);
-		__mwi midTileY = _mmw_srai_epi32(_mmw_max_epi32(_mmw_cvttps_epi32(midPixelY), SIMD_BITS_ZERO), TILE_HEIGHT_SHIFT);
+		__mwi midTileY = (__mwi)_mmw_srai_epi32(_mmw_max_epi32((__mwi)_mmw_cvttps_epi32(midPixelY), (__mwi)SIMD_BITS_ZERO), TILE_HEIGHT_SHIFT);
 		__mwi bbMidTileY = _mmw_max_epi32(bbTileMinY, _mmw_min_epi32(bbTileMaxY, midTileY));
 
 		//////////////////////////////////////////////////////////////////////////////
@@ -1185,35 +1199,35 @@ public:
 		// Modify slope of horizontal edges to make sure they mask out pixels above/below the edge. The slope is set to screen
 		// width to mask out all pixels above or below the horizontal edge. We must also add a small bias to acount for that 
 		// vertices may end up off screen due to clipping. We're assuming that the round off error is no bigger than 1.0
-		__mw horizontalSlopeDelta = _mmw_set1_ps((float)mWidth + 2.0f*(GUARD_BAND_PIXEL_SIZE + 1.0f));
-		slope[0] = _mmw_blendv_ps(slope[0], horizontalSlopeDelta, _mmw_cmpeq_ps(edgeY[0], _mmw_setzero_ps()));
-		slope[1] = _mmw_blendv_ps(slope[1], -horizontalSlopeDelta, _mmw_cmpeq_ps(edgeY[1], _mmw_setzero_ps()));
+		__mw horizontalSlopeDelta = (__mw)_mmw_set1_ps((float)mWidth + 2.0f*(GUARD_BAND_PIXEL_SIZE + 1.0f));
+		slope[0] = (__mw)_mmw_blendv_ps(slope[0], horizontalSlopeDelta, (__mw)_mmw_cmpeq_ps(edgeY[0], _mmw_setzero_ps()));
+		slope[1] = (__mw)_mmw_blendv_ps(slope[1], -horizontalSlopeDelta, (__mw)_mmw_cmpeq_ps(edgeY[1], _mmw_setzero_ps()));
 
 		// Convert floaing point slopes to fixed point
 		__mwi slopeFP[3];
-		slopeFP[0] = _mmw_cvttps_epi32(slope[0] * _mmw_set1_ps(1 << FP_BITS));
-		slopeFP[1] = _mmw_cvttps_epi32(slope[1] * _mmw_set1_ps(1 << FP_BITS));
-		slopeFP[2] = _mmw_cvttps_epi32(slope[2] * _mmw_set1_ps(1 << FP_BITS));
+		slopeFP[0] = (__mwi)_mmw_cvttps_epi32(slope[0] * __mw(_mmw_set1_ps(1 << FP_BITS)));
+		slopeFP[1] = (__mwi)_mmw_cvttps_epi32(slope[1] * __mw(_mmw_set1_ps(1 << FP_BITS)));
+		slopeFP[2] = (__mwi)_mmw_cvttps_epi32(slope[2] * __mw(_mmw_set1_ps(1 << FP_BITS)));
 
 		// Fan out edge slopes to avoid (rare) cracks at vertices. We increase right facing slopes 
 		// by 1 LSB, which results in overshooting vertices slightly, increasing triangle coverage. 
 		// e0 is always right facing, e1 depends on if the middle vertex is on the left or right
 		slopeFP[0] = slopeFP[0] + 1;
-		slopeFP[1] = slopeFP[1] + _mmw_srli_epi32(~simd_cast<__mwi>(edgeY[1]), 31);
+		slopeFP[1] = slopeFP[1] + __mwi(_mmw_srli_epi32(~simd_cast<__mwi>(edgeY[1]), 31));
 
 		// Compute slope deltas for an SIMD_LANES scanline step (tile height)
 		__mwi slopeTileDelta[3];
-		slopeTileDelta[0] = _mmw_slli_epi32(slopeFP[0], TILE_HEIGHT_SHIFT);
-		slopeTileDelta[1] = _mmw_slli_epi32(slopeFP[1], TILE_HEIGHT_SHIFT);
-		slopeTileDelta[2] = _mmw_slli_epi32(slopeFP[2], TILE_HEIGHT_SHIFT);
+		slopeTileDelta[0] = (__mwi)_mmw_slli_epi32(slopeFP[0], TILE_HEIGHT_SHIFT);
+		slopeTileDelta[1] = (__mwi)_mmw_slli_epi32(slopeFP[1], TILE_HEIGHT_SHIFT);
+		slopeTileDelta[2] = (__mwi)_mmw_slli_epi32(slopeFP[2], TILE_HEIGHT_SHIFT);
 
 		// Compute edge events for the bottom of the bounding box, or for the middle tile in case of 
 		// the edge originating from the middle vertex.
 		__mwi xDiffi[2], yDiffi[2];
-		xDiffi[0] = _mmw_slli_epi32(_mmw_cvttps_epi32(pVtxX[0]) - bbPixelMinX, FP_BITS);
-		xDiffi[1] = _mmw_slli_epi32(_mmw_cvttps_epi32(midPixelX) - bbPixelMinX, FP_BITS);
-		yDiffi[0] = _mmw_cvttps_epi32(pVtxY[0]) - bbPixelMinY;
-		yDiffi[1] = _mmw_cvttps_epi32(midPixelY) - _mmw_slli_epi32(bbMidTileY, TILE_HEIGHT_SHIFT);
+		xDiffi[0] = (__mwi)_mmw_slli_epi32(__mwi(_mmw_cvttps_epi32(pVtxX[0])) - bbPixelMinX, FP_BITS);
+		xDiffi[1] = (__mwi)_mmw_slli_epi32(__mwi(_mmw_cvttps_epi32(midPixelX)) - bbPixelMinX, FP_BITS);
+		yDiffi[0] = __mwi(_mmw_cvttps_epi32(pVtxY[0])) - bbPixelMinY;
+		yDiffi[1] = (__mwi)_mmw_cvttps_epi32(midPixelY) - (__mwi)_mmw_slli_epi32(bbMidTileY, TILE_HEIGHT_SHIFT);
 
 		__mwi eventStart[3];
 		eventStart[0] = xDiffi[0] - _mmw_mullo_epi32(slopeFP[0], yDiffi[0]);
@@ -1226,9 +1240,9 @@ public:
 		// Split bounding box into bottom - middle - top region.
 		//////////////////////////////////////////////////////////////////////////////
 
-		__mwi bbBottomIdx = bbTileMinX + _mmw_mullo_epi32(bbTileMinY, _mmw_set1_epi32(mTilesWidth));
-		__mwi bbTopIdx = bbTileMinX + _mmw_mullo_epi32(bbTileMinY + bbTileSizeY, _mmw_set1_epi32(mTilesWidth));
-		__mwi bbMidIdx = bbTileMinX + _mmw_mullo_epi32(midTileY, _mmw_set1_epi32(mTilesWidth));
+		__mwi bbBottomIdx = bbTileMinX + _mmw_mullo_epi32(bbTileMinY, (__mwi)_mmw_set1_epi32(mTilesWidth));
+		__mwi bbTopIdx = bbTileMinX + _mmw_mullo_epi32(bbTileMinY + bbTileSizeY, (__mwi)_mmw_set1_epi32(mTilesWidth));
+		__mwi bbMidIdx = bbTileMinX + _mmw_mullo_epi32(midTileY, (__mwi)_mmw_set1_epi32(mTilesWidth));
 
 		//////////////////////////////////////////////////////////////////////////////
 		// Loop over non-culled triangle and change SIMD axis to per-pixel
@@ -1239,11 +1253,11 @@ public:
 			int triMidVtxRight = (midVtxRight >> triIdx) & 1;
 
 			// Get Triangle Zmin zMax
-			__mw zTriMax = _mmw_set1_ps(zMax.mw_f32[triIdx]);
-			__mw zTriMin = _mmw_set1_ps(zMin.mw_f32[triIdx]);
+			__mw zTriMax = (__mw)_mmw_set1_ps(zMax.mw_f32[triIdx]);
+			__mw zTriMin = (__mw)_mmw_set1_ps(zMin.mw_f32[triIdx]);
 
 			// Setup Zmin value for first set of 8x4 subtiles
-			__mw z0 = _mmw_fmadd_ps(_mmw_set1_ps(zPixelDx.mw_f32[triIdx]), SIMD_SUB_TILE_COL_OFFSET_F,
+			__mw z0 = (__mw)_mmw_fmadd_ps(_mmw_set1_ps(zPixelDx.mw_f32[triIdx]), SIMD_SUB_TILE_COL_OFFSET_F,
 				_mmw_fmadd_ps(_mmw_set1_ps(zPixelDy.mw_f32[triIdx]), SIMD_SUB_TILE_ROW_OFFSET_F, _mmw_set1_ps(zPlaneOffset.mw_f32[triIdx])));
 			float zx = zTileDx.mw_f32[triIdx];
 			float zy = zTileDy.mw_f32[triIdx];
@@ -1308,7 +1322,7 @@ public:
 
 		int clipHead = 0;
 		int clipTail = 0;
-		__m128 clipTriBuffer[MAX_CLIPPED * 3];
+		moc__m128 clipTriBuffer[MAX_CLIPPED * 3];
 		int cullResult = CullingResult::VIEW_CULLED;
 
 		// Setup fullscreen scissor rect as default
@@ -1458,26 +1472,26 @@ public:
 		STATS_ADD(mStats.mOccludees.mNumProcessedRectangles, 1);
 		assert(mMaskedHiZBuffer != nullptr);
 
-		static const __m128i SIMD_TILE_PAD = _mm_setr_epi32(0, TILE_WIDTH, 0, TILE_HEIGHT);
-		static const __m128i SIMD_TILE_PAD_MASK = _mm_setr_epi32(~(TILE_WIDTH - 1), ~(TILE_WIDTH - 1), ~(TILE_HEIGHT - 1), ~(TILE_HEIGHT - 1));
-		static const __m128i SIMD_SUB_TILE_PAD = _mm_setr_epi32(0, SUB_TILE_WIDTH, 0, SUB_TILE_HEIGHT);
-		static const __m128i SIMD_SUB_TILE_PAD_MASK = _mm_setr_epi32(~(SUB_TILE_WIDTH - 1), ~(SUB_TILE_WIDTH - 1), ~(SUB_TILE_HEIGHT - 1), ~(SUB_TILE_HEIGHT - 1));
+		static const moc__m128i SIMD_TILE_PAD = (moc__m128i)_mm_setr_epi32(0, TILE_WIDTH, 0, TILE_HEIGHT);
+		static const moc__m128i SIMD_TILE_PAD_MASK = (moc__m128i)_mm_setr_epi32(~(TILE_WIDTH - 1), ~(TILE_WIDTH - 1), ~(TILE_HEIGHT - 1), ~(TILE_HEIGHT - 1));
+		static const moc__m128i SIMD_SUB_TILE_PAD = (moc__m128i)_mm_setr_epi32(0, SUB_TILE_WIDTH, 0, SUB_TILE_HEIGHT);
+		static const moc__m128i SIMD_SUB_TILE_PAD_MASK = (moc__m128i)_mm_setr_epi32(~(SUB_TILE_WIDTH - 1), ~(SUB_TILE_WIDTH - 1), ~(SUB_TILE_HEIGHT - 1), ~(SUB_TILE_HEIGHT - 1));
 
 		//////////////////////////////////////////////////////////////////////////////
 		// Compute screen space bounding box and guard for out of bounds
 		//////////////////////////////////////////////////////////////////////////////
 #if USE_D3D != 0
-		__m128  pixelBBox = _mm_setr_ps(xmin, xmax, ymax, ymin) * mIHalfSize + mICenter;
+		moc__m128  pixelBBox = moc__m128(_mm_setr_ps(xmin, xmax, ymax, ymin)) * mIHalfSize + mICenter;
 #else
-		__m128  pixelBBox = _mm_setr_ps(xmin, xmax, ymin, ymax) * mIHalfSize + mICenter;
+		moc__m128  pixelBBox = moc__m128(_mm_setr_ps(xmin, xmax, ymin, ymax)) * mIHalfSize + mICenter;
 #endif
-		__m128i pixelBBoxi = _mm_cvttps_epi32(pixelBBox);
-		pixelBBoxi = _mmx_max_epi32(_mm_setzero_si128(), _mmx_min_epi32(mIScreenSize, pixelBBoxi));
+		moc__m128i pixelBBoxi = (moc__m128i)_mm_cvttps_epi32(pixelBBox);
+		pixelBBoxi = (moc__m128i)_mmx_max_epi32((moc__m128i)_mm_setzero_si128(), _mmx_min_epi32(mIScreenSize, pixelBBoxi));
 
 		//////////////////////////////////////////////////////////////////////////////
 		// Pad bounding box to (32xN) tiles. Tile BB is used for looping / traversal
 		//////////////////////////////////////////////////////////////////////////////
-		__m128i tileBBoxi = (pixelBBoxi + SIMD_TILE_PAD) & SIMD_TILE_PAD_MASK;
+		moc__m128i tileBBoxi = (pixelBBoxi + SIMD_TILE_PAD) & SIMD_TILE_PAD_MASK;
 		int txMin = tileBBoxi.m128i_i32[0] >> TILE_WIDTH_SHIFT;
 		int txMax = tileBBoxi.m128i_i32[1] >> TILE_WIDTH_SHIFT;
 		int tileRowIdx = (tileBBoxi.m128i_i32[2] >> TILE_HEIGHT_SHIFT)*mTilesWidth;
@@ -1489,11 +1503,11 @@ public:
 		///////////////////////////////////////////////////////////////////////////////
 		// Pad bounding box to (8x4) subtiles. Skip SIMD lanes outside the subtile BB
 		///////////////////////////////////////////////////////////////////////////////
-		__m128i subTileBBoxi = (pixelBBoxi + SIMD_SUB_TILE_PAD) & SIMD_SUB_TILE_PAD_MASK;
-		__mwi stxmin = _mmw_set1_epi32(subTileBBoxi.m128i_i32[0] - 1); // - 1 to be able to use GT test
-		__mwi stymin = _mmw_set1_epi32(subTileBBoxi.m128i_i32[2] - 1); // - 1 to be able to use GT test
-		__mwi stxmax = _mmw_set1_epi32(subTileBBoxi.m128i_i32[1]);
-		__mwi stymax = _mmw_set1_epi32(subTileBBoxi.m128i_i32[3]);
+		moc__m128i subTileBBoxi = (pixelBBoxi + SIMD_SUB_TILE_PAD) & SIMD_SUB_TILE_PAD_MASK;
+		__mwi stxmin = (__mwi)_mmw_set1_epi32(subTileBBoxi.m128i_i32[0] - 1); // - 1 to be able to use GT test
+		__mwi stymin = (__mwi)_mmw_set1_epi32(subTileBBoxi.m128i_i32[2] - 1); // - 1 to be able to use GT test
+		__mwi stxmax = (__mwi)_mmw_set1_epi32(subTileBBoxi.m128i_i32[1]);
+		__mwi stymax = (__mwi)_mmw_set1_epi32(subTileBBoxi.m128i_i32[3]);
 
 		// Setup pixel coordinates used to discard lanes outside subtile BB
 		__mwi startPixelX = SIMD_SUB_TILE_COL_OFFSET + tileBBoxi.m128i_i32[0];
@@ -1503,7 +1517,7 @@ public:
 		// Compute z from w. Note that z is reversed order, 0 = far, 1 = near, which
 		// means we use a greater than test, so zMax is used to test for visibility.
 		//////////////////////////////////////////////////////////////////////////////
-		__mw zMax = _mmw_set1_ps(1.0f) / wmin;
+		__mw zMax = __mw(_mmw_set1_ps(1.0f)) / wmin;
 
 		for (;;)
 		{
@@ -1520,16 +1534,16 @@ public:
 				__mw zBuf = mMaskedHiZBuffer[tileIdx].mZMin[0];
 #else
 				__mwi mask = mMaskedHiZBuffer[tileIdx].mMask;
-				__mw zMin0 = _mmw_blendv_ps(mMaskedHiZBuffer[tileIdx].mZMin[0], mMaskedHiZBuffer[tileIdx].mZMin[1], simd_cast<__mw>(_mmw_cmpeq_epi32(mask, _mmw_set1_epi32(~0))));
-				__mw zMin1 = _mmw_blendv_ps(mMaskedHiZBuffer[tileIdx].mZMin[1], mMaskedHiZBuffer[tileIdx].mZMin[0], simd_cast<__mw>(_mmw_cmpeq_epi32(mask, _mmw_setzero_epi32())));
+				__mw zMin0 = _mmw_blendv_ps(mMaskedHiZBuffer[tileIdx].mZMin[0], mMaskedHiZBuffer[tileIdx].mZMin[1], simd_cast<__mw>(__mwi(_mmw_cmpeq_epi32(mask, _mmw_set1_epi32(~0)))));
+				__mw zMin1 = _mmw_blendv_ps(mMaskedHiZBuffer[tileIdx].mZMin[1], mMaskedHiZBuffer[tileIdx].mZMin[0], simd_cast<__mw>(__mwi(_mmw_cmpeq_epi32(mask, _mmw_setzero_epi32()))));
 				__mw zBuf = _mmw_min_ps(zMin0, zMin1);
 #endif
 				// Perform conservative greater than test against hierarchical Z buffer (zMax >= zBuf means the subtile is visible)
-				__mwi zPass = simd_cast<__mwi>(_mmw_cmpge_ps(zMax, zBuf));	//zPass = zMax >= zBuf ? ~0 : 0
+				__mwi zPass = simd_cast<__mwi>(__mw(_mmw_cmpge_ps(zMax, zBuf)));	//zPass = zMax >= zBuf ? ~0 : 0
 
 				// Mask out lanes corresponding to subtiles outside the bounding box
-				__mwi bboxTestMin = _mmw_cmpgt_epi32(pixelX, stxmin) & _mmw_cmpgt_epi32(pixelY, stymin);
-				__mwi bboxTestMax = _mmw_cmpgt_epi32(stxmax, pixelX) & _mmw_cmpgt_epi32(stymax, pixelY);
+				__mwi bboxTestMin = (__mwi)_mmw_cmpgt_epi32(pixelX, stxmin) & (__mwi)_mmw_cmpgt_epi32(pixelY, stymin);
+				__mwi bboxTestMax = (__mwi)_mmw_cmpgt_epi32(stxmax, pixelX) & (__mwi)_mmw_cmpgt_epi32(stymax, pixelY);
 				__mwi boxMask = bboxTestMin & bboxTestMax;
 				zPass = zPass & boxMask;
 
@@ -1563,7 +1577,7 @@ public:
 
 		int clipHead = 0;
 		int clipTail = 0;
-		__m128 clipTriBuffer[MAX_CLIPPED * 3];
+		moc__m128 clipTriBuffer[MAX_CLIPPED * 3];
 
 		const unsigned int *inTrisPtr = inTris;
 		int numLanes = SIMD_LANES;
@@ -1711,7 +1725,7 @@ public:
 #endif
 	}
 
-	void BinTriangles(const float *inVtx, const unsigned int *inTris, int nTris, TriList *triLists, unsigned int nBinsW, unsigned int nBinsH, const float *modelToClipMatrix, ClipPlanes clipPlaneMask, const VertexLayout &vtxLayout)
+	void BinTriangles(const float *inVtx, const unsigned int *inTris, int nTris, TriList *triLists, unsigned int nBinsW, unsigned int nBinsH, const float *modelToClipMatrix, ClipPlanes clipPlaneMask, const VertexLayout &vtxLayout) override
 	{
 		if (vtxLayout.mStride == 16 && vtxLayout.mOffsetY == 4 && vtxLayout.mOffsetW == 12)
 			BinTriangles<true>(inVtx, inTris, nTris, triLists, nBinsW, nBinsH, modelToClipMatrix, clipPlaneMask, vtxLayout);
@@ -1719,16 +1733,16 @@ public:
 			BinTriangles<false>(inVtx, inTris, nTris, triLists, nBinsW, nBinsH, modelToClipMatrix, clipPlaneMask, vtxLayout);
 	}
 
-	void RenderTrilist(const TriList &triList, const ScissorRect *scissor)
+	void RenderTrilist(const TriList &triList, const ScissorRect *scissor) override
 	{
 		assert(mMaskedHiZBuffer != nullptr);
 
 		// Setup fullscreen scissor rect as default
 		scissor = scissor == nullptr ? &mFullscreenScissor : scissor;
 
-		const unsigned int componentSize = sizeof(__mw) / sizeof(float);
-		const unsigned int vtxSize = 3 * componentSize;
-		const unsigned int triSize = 3 * vtxSize;
+		// const unsigned int componentSize = sizeof(__mw) / sizeof(float);
+		// const unsigned int vtxSize = 3 * componentSize;
+		// const unsigned int triSize = 3 * vtxSize;
 
 		for (unsigned int i = 0; i < triList.mTriIdx; i += SIMD_LANES)
 		{
