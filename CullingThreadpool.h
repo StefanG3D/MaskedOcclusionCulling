@@ -131,11 +131,11 @@ protected:
 	};
 
 	// Number of worker threads and bins
-	unsigned int					mNumThreads;
-	unsigned int					mNumBins;
-	unsigned int					mMaxJobs;
-	unsigned int					mBinsW;
-	unsigned int					mBinsH;
+	const unsigned int				mNumThreads;
+	const unsigned int				mNumBins;
+	const unsigned int				mMaxJobs;
+	const unsigned int				mBinsW;
+	const unsigned int				mBinsH;
 
 	// Threads and control variables
 	std::mutex						mSuspendedMutex;
